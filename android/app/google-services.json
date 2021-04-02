@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "58006126187",
+    "project_id": "pdponline-fca41",
+    "storage_bucket": "pdponline-fca41.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58006126187:android:cbcd5b11e8897a4f8abb2e",
+        "android_client_info": {
+          "package_name": "com.pdp.instagramclone"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "58006126187-6ldvu8nt57aa4e8l1k6tmr279r15u2hu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhGbrJlwt0G3JHfN6qHRCERvjsveHAngM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "58006126187-6ldvu8nt57aa4e8l1k6tmr279r15u2hu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
