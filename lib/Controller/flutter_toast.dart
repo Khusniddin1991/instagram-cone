@@ -1,5 +1,11 @@
+import 'dart:io';
+import 'dart:math';
+
+import 'package:device_info/device_info.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:instagramclone/Controller/prefs.dart';
 
 class Utils {
   static void fireToast(String msg) {
@@ -13,32 +19,81 @@ class Utils {
         fontSize: 16.0);
   }
 
-  static  bool isPassword(String password, [int minLength = 6]) {
-    if (password == null || password.isEmpty) {
-      Utils.fireToast("Password should be more than 8 characters long and"
-          " contains at least one Uppercase ( Capital ) letter");
-      return false;
+
+
+
+  static Future<bool> dialogCommon(BuildContext context, String title, String message, bool isSingle) async {
+    return await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              !isSingle
+                  ? FlatButton(
+                child: Text("Cancel"),
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
+              )
+                  : SizedBox.shrink(),
+              FlatButton(
+                child: Text("Confirm"),
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+              )
+            ],
+          );
+        });
+  }
+
+  static Future<Map<String, String>>  deviceParams() async{
+    Map<String, String> params = new Map();
+    var deviceInfo = DeviceInfoPlugin();
+    String fcm_token = await Prefs.loadFCM();
+
+    if (Platform.isIOS) {
+      var iosDeviceInfo = await deviceInfo.iosInfo;
+      params.addAll({
+        'device_id': iosDeviceInfo.identifierForVendor,
+        'device_type': "I",
+        'device_token': fcm_token,
+      });
+    } else {
+      var androidDeviceInfo = await deviceInfo.androidInfo;
+      params.addAll({
+        'device_id': androidDeviceInfo.androidId,
+        'device_type': "A",
+        'device_token': fcm_token,
+      });
+    }
+    return params;
+  }
+
+  static Future<void> showLocalNotification(Map<String, dynamic> message) async {
+    String title = message['title'];
+    String body = message['body'];
+
+    if(Platform.isAndroid){
+      title = message['notification']['title'];
+      body = message['notification']['body'];
     }
 
-    bool hasUppercase = password.contains(new RegExp(r'[A-Z]'));
-    bool hasDigits = password.contains(new RegExp(r'[0-9]'));
-    bool hasLowercase = password.contains(new RegExp(r'[a-z]'));
-    bool hasSpecialCharacters =
-    password.contains(new RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-    bool hasMinLength = password.length > minLength;
+    var android = AndroidNotificationDetails('channelId', 'channelName', 'channelDescription');
+    var iOS = IOSNotificationDetails();
+    var platform = NotificationDetails(android: android, iOS: iOS);
 
-    return hasDigits &
-    hasUppercase &
-    hasLowercase &
-    hasSpecialCharacters &
-    hasMinLength;
+    int id = Random().nextInt(pow(2, 31) - 1);
+    await FlutterLocalNotificationsPlugin().show(id, title, body, platform);
   }
 
-  static  bool isEmail(String email) {
-    String p =
-        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
 
-    RegExp regExp = new RegExp(p);
-    return regExp.hasMatch(email);
-  }
+
+
+
+
+
+
 }

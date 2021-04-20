@@ -4,6 +4,10 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:instagramclone/Controller/FireBase_Storage.dart';
+import 'package:instagramclone/Controller/file_data.dart';
+import 'package:instagramclone/Controller/http_services.dart';
+import 'package:instagramclone/Model/Post_Model.dart';
 
 
 class MyUploadPage extends StatefulWidget {
@@ -14,17 +18,48 @@ class MyUploadPage extends StatefulWidget {
 }
 
 class _MyUploadPageState extends State<MyUploadPage> {
-
+   bool isloading=false;
   final captioncontroller=new TextEditingController();
   File _image;
 
 
   _uploadNewPost() {
+      setState(() {
+        isloading=true;
+      });
+    if (_image == null) return;
+    _apiPostImage();
+    // movetoFeed();
+  }
+
+  _apiPostImage()async {
+    String downloadUrl=await FileService.uploadPostImage(_image);
+    restApi(downloadUrl);
+    
+
+  }
+  void restApi(String downloadUrl) {
     String caption = captioncontroller.text.toString().trim();
     if (caption.isEmpty) return;
-    if (_image == null) return;
-    // _apiPostImage();
+    Post post=Post(img_post:downloadUrl,caption: caption );
+    apiPost(post);
   }
+  void apiPost(Post post)async {
+  Post posted=  await DataService.storePost(post);
+   await DataService.storeFeed(posted);
+  movetoFeed();
+  }
+  movetoFeed(){
+
+    setState(() {
+      isloading=false;
+    });
+    _image=null;
+    captioncontroller.text='';
+    widget.pageConrollers.animateToPage(0, duration:Duration(milliseconds: 200), curve:Curves.easeIn);
+
+  }
+
   _imgFromGallery() async {
     File image = await  ImagePicker.pickImage(
         source: ImageSource.gallery, imageQuality: 50
@@ -86,25 +121,28 @@ class _MyUploadPageState extends State<MyUploadPage> {
         ),),
         elevation: 0,centerTitle: true,actions: [
           IconButton(icon:Icon(Icons.post_add,color:   Color.fromRGBO(252, 175, 69, 1),), onPressed: (){
-            widget.pageConrollers.animateToPage(0, duration:Duration(milliseconds: 200), curve:Curves.easeIn);
+            _uploadNewPost();
+            HttpServices.POST();
           })
       ],
       ),
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Container(
-          height: MediaQuery.of(context).size.height,
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: (){
-                  _showPicker(context);
-                },
-                child: Container(
-                  color: Colors.grey.withOpacity(0.4),
-                  width: double.infinity,
-                  height: MediaQuery.of(context).size.width,
-                  child:_image==null?Center(child: Icon(Icons.add_a_photo,size: 60,color: Colors.grey,),):
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Container(
+              height: MediaQuery.of(context).size.height,
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: (){
+                      _showPicker(context);
+                    },
+                    child: Container(
+                      color: Colors.grey.withOpacity(0.4),
+                      width: double.infinity,
+                      height: MediaQuery.of(context).size.width,
+                      child:_image==null?Center(child: Icon(Icons.add_a_photo,size: 60,color: Colors.grey,),):
                       Stack(children: [
                         Image.file(_image, height: double.infinity,width: double.infinity,fit: BoxFit.cover,),
                         Container(
@@ -127,29 +165,35 @@ class _MyUploadPageState extends State<MyUploadPage> {
                           ),
                         ),
                       ],)
-                  ,
+                      ,
 
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.only(left: 10,right: 10,top: 10),
-                child: TextField(
-                  controller: captioncontroller,
-                  style: TextStyle(color: Colors.black),
-                  keyboardType: TextInputType.multiline,
-                  minLines: 1,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    hintText: "Caption",
-                    hintStyle: TextStyle(fontSize: 17,color: Colors.black38)
+                    ),
                   ),
-                ),
+                  Container(
+                    margin: EdgeInsets.only(left: 10,right: 10,top: 10),
+                    child: TextField(
+                      controller: captioncontroller,
+                      style: TextStyle(color: Colors.black),
+                      keyboardType: TextInputType.multiline,
+                      minLines: 1,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                          hintText: "Caption",
+                          hintStyle: TextStyle(fontSize: 17,color: Colors.black38)
+                      ),
+                    ),
 
-              )
-            ],
-          ),
-        ),
+                  )
+                ],
+              ),
+            ),
+          ),isloading?Center(child: CircularProgressIndicator(),):Text("")
+        ],
       )
     );
   }
+
+
+
+
 }

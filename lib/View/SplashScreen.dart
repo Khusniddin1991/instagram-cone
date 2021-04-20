@@ -3,7 +3,9 @@
 
 import 'dart:async';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:instagramclone/Controller/prefs.dart';
 import 'package:instagramclone/View/MyHomePage.dart';
 import 'package:instagramclone/View/SignIn.dart';
 
@@ -16,20 +18,31 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
 
-
+  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
  next(){
    Timer(Duration(seconds: 2),(){
      Navigator.pushReplacementNamed(context,MyHomePage.id );
    });
  }
-
+  _initNotification() {
+    _firebaseMessaging.requestNotificationPermissions(const IosNotificationSettings(sound: true, badge: true, alert: true));
+    _firebaseMessaging.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
+      print("Settings registered: $settings");
+    });
+    _firebaseMessaging.getToken().then((String token) {
+      assert(token != null);
+      print(token);
+      Prefs.saveFCM(token);
+    });
+  }
  @override
   void initState() {
     // TODO: implement initState
     super.initState();
     next();
-  }
+    _initNotification();
+ }
 
 
 

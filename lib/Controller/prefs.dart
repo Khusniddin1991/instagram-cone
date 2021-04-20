@@ -20,6 +20,26 @@ class Prefs{
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.remove('user_id');
   }
+  static String currentDate() {
+    DateTime now = DateTime.now();
+
+    String convertedDateTime =
+        "${now.year.toString()}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString()}:${now.minute.toString()}";
+    return convertedDateTime;
+  }
+  // Firebase Token
+  static Future<bool> saveFCM(String fcm_token) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.setString('fcm_token', fcm_token);
+  }
+
+  static Future<String> loadFCM() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String token = prefs.getString('fcm_token');
+    return token;
+  }
+
+
+
 
 }
-// © 2021 GitHub, Inc.

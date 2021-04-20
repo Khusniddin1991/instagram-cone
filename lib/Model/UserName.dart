@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 class Users {
   String uid = "";
   String fullname = "";
+  String lastName = "";
   String email = "";
   String password = "";
   String img_url = "";

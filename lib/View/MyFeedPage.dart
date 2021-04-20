@@ -2,7 +2,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_icons/flutter_icons.dart';
+import 'package:flutter_share/flutter_share.dart';
+import 'package:instagramclone/Controller/FireBase_Storage.dart';
+import 'package:instagramclone/Controller/flutter_toast.dart';
 import 'package:instagramclone/Model/Post_Model.dart';
+import 'package:share/share.dart';
 class MyFeedPage extends StatefulWidget {
   PageController pageConroller;
   MyFeedPage({this.pageConroller});
@@ -13,19 +17,52 @@ class MyFeedPage extends StatefulWidget {
 }
 
 class _MyFeedPageState extends State<MyFeedPage> {
+  bool isLoading=false;
 
   List<Post> items=new List();
+  getdata()async{
+  List<Post> posts=  await DataService.loadUsers();
+    updat(posts);
+  }
+  void updat(List<Post> posts) {
+    setState(() {
+      items=posts;
+    });
+  }
   // ignore: must_call_super
-  String post_img="https://firebasestorage.googleapis.com/v0/b/koreanguideway.appspot.com/o/develop%2Fpost.png?alt=media&token=f0b1ba56-4bf4-4df2-9f43-6b8665cdc964";
-  String post_img2="https://firebasestorage.googleapis.com/v0/b/koreanguideway.appspot.com/o/develop%2Fpost2.png?alt=media&token=ac0c131a-4e9e-40c0-a75a-88e586b28b72";
   initState(){
     super.initState();
-    items.add(Post(postCaption:"i took a picture one of my friend yesterday who work in amazon as software engineer ",postImage:post_img  ));
-    items.add(Post(postCaption:"i took a picture one of my friend yesterday who work in amazon as software engineer ",postImage: post_img2 ));
+    getdata();
+  }
+  void _apiPostLike(Post post) async {
+    setState(() {
+      isLoading = true;
+    });
+    await DataService.likePost(post, true);
+    setState(() {
+      isLoading = false;
+      post.liked = true;
+    });
   }
 
+  void _apiPostUnLike(Post post) async {
+    setState(() {
+      isLoading = true;
+    });
+    await DataService.likePost(post, false);
+    setState(() {
+      isLoading = false;
+      post.liked = false;
+    });
+  }
 
-
+  void actionREmove(Post item) async {
+    var result= await Utils.dialogCommon(context, "Profile", "do you want to delete this post ?", false);
+    if(result!=null&&result){
+      await  DataService.removePost(item);
+      getdata();
+    }
+  }
 
 
   Widget build(BuildContext context) {
@@ -45,12 +82,20 @@ class _MyFeedPageState extends State<MyFeedPage> {
         ],
       ),
       backgroundColor: Colors.white,
-      body:ListView.builder(itemCount:items.length,itemBuilder:(_,i){
+      body:Stack(children: [
+        ListView.builder(itemCount:items.length,itemBuilder:(_,i){
 
-        return makeOfitme(items[i]);
-      })
+          return makeOfitme(items[i]);
+        }),isLoading
+            ? Center(
+          child: CircularProgressIndicator(),
+        )
+            : SizedBox.shrink(),
+      ],)
     );
   }
+
+
 
   Widget makeOfitme(Post item) {
     return Container(
@@ -64,7 +109,7 @@ class _MyFeedPageState extends State<MyFeedPage> {
             children: [
 
           Row(children: [
-            ClipRRect(
+            item.img_user==null||item.img_user.isEmpty?ClipRRect(
               borderRadius: BorderRadius.circular(40),
               child: Image(
                 image: AssetImage("asset/instagramPicture.png"),
@@ -72,37 +117,57 @@ class _MyFeedPageState extends State<MyFeedPage> {
                 height: 40,
                 fit: BoxFit.cover,
               ),
+            ): ClipRRect(
+                borderRadius: BorderRadius.circular(40),
+                child: Image.network(item.img_user,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,)
             ),
             SizedBox(width: 10,),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Username",style: TextStyle(
+                Text(item.fullname,style: TextStyle(
                     fontWeight: FontWeight.bold,color: Colors.black
                 ),),
-                Text("Febaury 2, 2021",style: TextStyle(
+                Text(item.date,style: TextStyle(
                   fontWeight: FontWeight.normal,
                 ),)
 
 
               ],)
-          ],),
-            IconButton(icon:Icon(SimpleLineIcons.options), onPressed: (){})
+          ],),item.mine?
+            IconButton(icon:Icon(SimpleLineIcons.options), onPressed: (){
+                  actionREmove(item);
+            }):SizedBox.shrink()
           ],),
         ),
         // images
         // Image.network(item.postImage,fit: BoxFit.cover,),
         CachedNetworkImage(
-            imageUrl:item.postImage,
-          placeholder: (_,url)=>CircularProgressIndicator(),
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+             fit: BoxFit.cover,
+            imageUrl:item.img_post,
+          placeholder: (_,url)=>Center(child: CircularProgressIndicator()),
           errorWidget:(_,url,error)=>Icon(Icons.error),
+
         ),
 
         // icon buttons
         Row(
           children: [
-            IconButton(icon:Icon(FontAwesome.heart_o), onPressed: (){}),
-            IconButton(icon:Icon(FontAwesome.send), onPressed: (){})
+            IconButton(icon:item.liked?Icon(FontAwesome.heart,color: Colors.red,):Icon(FontAwesome.heart_o),onPressed: (){
+              if (!item.liked) {
+                _apiPostLike(item);
+              } else {
+                _apiPostUnLike(item);
+              }
+            }),
+            IconButton(icon:Icon(FontAwesome.send), onPressed: (){
+              shareButton(link: item.img_post,title: item.caption);
+            })
 
           ],
         ),
@@ -115,7 +180,7 @@ class _MyFeedPageState extends State<MyFeedPage> {
             text: TextSpan(
               children: [
                 TextSpan(
-                  text: " ${item.postCaption}",
+                  text: " ${item.caption}",
                   style: TextStyle(color: Colors.black),
                 ),
               ],
@@ -125,4 +190,16 @@ class _MyFeedPageState extends State<MyFeedPage> {
       ],
     ),);
   }
+
+  Future shareButton({dynamic link,String title})async{
+    await FlutterShare.share(
+      title: "send to another platform",
+      text: title,
+      linkUrl:link,
+      chooserTitle: "Where you wanna share"
+    );
+  }
+
+
+
 }
