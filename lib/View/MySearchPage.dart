@@ -57,6 +57,7 @@ class _MySearchPageState extends State<MySearchPage> {
       isloading = false;
     });
     DataService.storePostsToMyFeed(someone);
+    print("go");
   }
 
   void _apiUnfollowUser(Users someone) async{
